@@ -1,7 +1,7 @@
 from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional
-from schemas.responses.academic import DepartmentResponse, ProgramResponse, SessionResponse
+
 
 class TokenBasic(BaseModel):
     access_token: str
@@ -35,15 +35,6 @@ class ProfileResponse(BaseModel):
     reg_no: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
-    department: Optional[DepartmentResponse] = None
-    program: Optional[ProgramResponse] = None
-    session: Optional[SessionResponse] = None
-    codeforces_handle: Optional[str] = None
-    atcoder_handle: Optional[str] = None
-    vjudge_handle: Optional[str] = None
-    discord_handle: Optional[str] = None
-    github_handle: Optional[str] = None
-    google_account: Optional[str] = None
 
     class Config:
         from_attributes = True

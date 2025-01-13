@@ -18,8 +18,6 @@ class User(Base,CommonBase):
         role = relationship("Role", back_populates="users",foreign_keys=[role_id])
 
         profile = relationship("Profile", back_populates="user",cascade="all, delete-orphan")
-        ec_member = relationship("ECMember", back_populates="user")
-        hall_of_fames = relationship("HallOfFame", secondary="people_in_hall_of_fame", back_populates="people")
         trades = relationship("Trade", back_populates="user", foreign_keys=[Trade.user_id])
 
 class Profile(Base,CommonBase):
@@ -28,28 +26,8 @@ class Profile(Base,CommonBase):
         user = relationship("User",back_populates="profile", foreign_keys=[user_id])
         first_name = Column(String, nullable=True)
         last_name = Column(String, nullable=True)
-        reg_no = Column(String, nullable=True)
         bio = Column(String, nullable=True)
         phone = Column(String, nullable=True)
-
-        department_id = Column(ForeignKey("departments.id"))
-        department = relationship("Department", back_populates="profiles", foreign_keys=[department_id]) 
-
-        program_id = Column(ForeignKey("programs.id"))
-        program = relationship("Program", back_populates="profiles", foreign_keys=[program_id])
-
-        session_id = Column(ForeignKey("sessions.id"))
-        session = relationship("Session", back_populates="profiles", foreign_keys=[session_id])
-
-
-
-        codeforces_handle = Column(String, nullable=True)
-        atcoder_handle = Column(String, nullable=True)
-        vjudge_handle = Column(String, nullable=True)
-        discord_handle = Column(String, nullable=True)
-        github_handle = Column(String, nullable=True)
-        google_account = Column(String, nullable=True)
-
         image_id = Column(ForeignKey("images.id"))
         image = relationship("Image")
 
