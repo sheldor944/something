@@ -3,7 +3,8 @@ from sqlalchemy import Column, Integer,  String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db import Base
-from models.base import CommonBase    
+from models.base import CommonBase  
+from models.trade import Trade  
 
 class User(Base,CommonBase):
         __tablename__ = "users"
@@ -19,6 +20,7 @@ class User(Base,CommonBase):
         profile = relationship("Profile", back_populates="user",cascade="all, delete-orphan")
         ec_member = relationship("ECMember", back_populates="user")
         hall_of_fames = relationship("HallOfFame", secondary="people_in_hall_of_fame", back_populates="people")
+        trades = relationship("Trade", back_populates="user", foreign_keys=[Trade.user_id])
 
 class Profile(Base,CommonBase):
         __tablename__ = "profiles"
@@ -38,6 +40,8 @@ class Profile(Base,CommonBase):
 
         session_id = Column(ForeignKey("sessions.id"))
         session = relationship("Session", back_populates="profiles", foreign_keys=[session_id])
+
+
 
         codeforces_handle = Column(String, nullable=True)
         atcoder_handle = Column(String, nullable=True)

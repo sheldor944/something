@@ -11,6 +11,8 @@ class Stock(Base, AuditBase, CommonBase):
     name = Column(String, nullable=False)
     symbol = Column(String, nullable=False, unique=True)
     stockPrices = relationship("StockPrice", back_populates="stock")  # Corrected here
+    trades = relationship("Trade", back_populates="stock")
+    predictions = relationship("Prediction", back_populates="stock")
 
 class StockPrice(Base, AuditBase, CommonBase):
     __tablename__ = "stock_prices"
@@ -22,4 +24,4 @@ class StockPrice(Base, AuditBase, CommonBase):
     highPrice = Column(Float, nullable=False)
     lowPrice = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
-    date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False, unique=True)

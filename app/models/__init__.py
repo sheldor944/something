@@ -7,5 +7,6 @@ from models.image import Image
 from models.event import Event 
 from models.committee import ExecutiveCommittee, ECMember
 from models.stock import Stock, StockPrice
+from models.trade import Trade, Prediction
 
 

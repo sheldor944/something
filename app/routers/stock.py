@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile, Query, Depends
-from schemas.requests.stock import StockRequest
+from schemas.requests.stock import StockRequest, StockPriceRequest, StockPriceFilter
 from services import stock_service
 from dependency import get_db_session, get_current_user
 
@@ -21,3 +21,13 @@ def get_stocks_query(db: get_db_session,
                     page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
                     stock_request : StockRequest = Depends()):
     return stock_service.get_stocks_query(db, page_no, page_size, stock_request)
+
+@router.post("/stockprice/{id}")
+def create_stock_price(db: get_db_session, id: str, stock_price: StockPriceRequest, user: get_current_user):
+    return stock_service.create_stock_price(db, id, stock_price, user)
+
+@router.get("/stockprice/{id}")
+def get_stock_price(db: get_db_session,
+                    id: str,
+                    stock_price_filter: StockPriceFilter = Depends(None)):
+    return stock_service.get_stock_price(db, id, stock_price_filter)
