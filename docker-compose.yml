@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cseduic
+    ports:
+      - 5432:5432
+    volumes:
+      - cseduic_db:/var/lib/postgresql/data
+    networks:
+      - cseduic_network
+
+  backend:
+    build: .
+    ports:
+      - 9000:8000
+    depends_on:
+      - db
+    environment:
+      JWT_SECRET: cfXcr44io2rJGiiSK/SxwJNBG2ikW7xUn/py4pEquFM=
+      ALGO: HS256
+      DB_URL: postgresql://postgres:postgres@db/cseduic
+      BASE_URL: /api/v1
+    networks:
+      - cseduic_network
+
+volumes:
+  cseduic_db:
+    external: true
+
+networks:
+  cseduic_network:
