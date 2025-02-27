@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -7,11 +7,33 @@ from models.user import User
 from models.trade import Trade
 from schemas.requests.trade import TradeCreateRequest, TradeCloseRequest, TradeFilter
 from schemas.responses.trade import  TradeResponse
-
+from models.account import Account, Transaction
 from utils.query_filter_builder import QueryFilterBuilder
+from schemas.requests.accounts import TransactionRequest
+from models.stock import Stock
 
 
 def create_trade(db: Session, user: User, create_trade: TradeCreateRequest):
+
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    if account.balance < create_trade.trade_start_price * create_trade.quantity:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance"})
+    account.balance = account.balance - create_trade.trade_start_price * create_trade.quantity
+    stock = db.query(Stock).filter(Stock.id == create_trade.stock_id, Stock.is_deleted == False).first()
+    print("stock is ", stock)
+    transaction_request = TransactionRequest(
+        account_id = account.id,
+        transaction_type = "DEBIT",
+        symbol = stock.symbol,
+        amount=create_trade.trade_start_price * create_trade.quantity,
+        transaction_status = "COMPLETED",
+        transaction_date = date.today()
+    )
+    transaction = Transaction(**transaction_request.model_dump())
+    transaction.created_by = user.id
+    db.add(transaction)
     trade = Trade(**create_trade.model_dump())
     trade.user_id = user.id
     trade.created_by = user.id
@@ -22,6 +44,10 @@ def create_trade(db: Session, user: User, create_trade: TradeCreateRequest):
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Trade created successfully"})
 
 def close_trade(db: Session, user: User, close_trade: TradeCloseRequest):
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    
     trade_id = close_trade.trade_id
     trade = db.query(Trade).filter(Trade.id == trade_id, Trade.is_deleted == False).first()
     if not trade:
@@ -33,6 +59,20 @@ def close_trade(db: Session, user: User, close_trade: TradeCloseRequest):
     profit = (trade.trade_end_price - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
     trade.trade_profit = profit
     trade.updated_by = user.id
+    if profit > 0:
+        account.balance = account.balance + profit
+        stock = trade.stock
+        transaction_request = TransactionRequest(
+            account_id = account.id,
+            transaction_type = "CREDIT",
+            symbol = stock.symbol,
+            amount = profit,
+            transaction_status = "COMPLETED",
+            transaction_date = date.today()
+        )
+        transaction = Transaction(**transaction_request.model_dump())
+        transaction.created_by = user.id
+        db.add(transaction)
     db.commit()
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Trade closed successfully"})
