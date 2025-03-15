@@ -1,5 +1,5 @@
 from uuid import UUID
-from datetime import date as Date
+from datetime import date as Date, datetime
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
@@ -11,16 +11,16 @@ class PredictionRequest(BaseModel):
     high_price: Optional[float] = None
     low_price: Optional[float] = None
     volume: Optional[float] = None
-    date: Optional[Date] = None
+    date: Optional[datetime] = None
 
 class PredictionFilter(BaseModel):
     prediction_id: Optional[UUID] = None
     stock_id: Optional[UUID] = None
     symbol: Optional[str] = None 
-    startDate: Optional[Date] = None
-    endDate: Optional[Date] = None
-    exactDate: Optional[Date] = None
-    created_at: Optional[Date] = None
-    last_updated_at: Optional[Date] = None
+    startDate: Optional[datetime] = None
+    endDate: Optional[datetime] = None
+    exactDate: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    last_updated_at: Optional[datetime] = None
     class Config:
         from_attributes = True

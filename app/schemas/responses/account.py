@@ -7,6 +7,7 @@ class AccountResponse(BaseModel):
     id: UUID
     user_id: UUID
     balance: float
+    automated_balance: float
     currency: str
     created_at: datetime
     last_updated_at: datetime
@@ -22,5 +23,6 @@ class Transaction(BaseModel):
     transaction_status: str
     created_at: datetime
     last_updated_at: datetime
+    transaction_done_by: str
     class Config:
         from_attributes = True

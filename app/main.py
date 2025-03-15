@@ -28,7 +28,7 @@ app.mount("/media", StaticFiles(directory="media"), name="media")
 @app.get("/")
 def root():
         return{
-                "Intro":"Welcome to CSEDUIC backend"
+                "Intro":"Welcome to  my Thesis backendd"
         }
 
 #routing

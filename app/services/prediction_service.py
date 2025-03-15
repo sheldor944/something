@@ -9,6 +9,8 @@ from models.stock import Stock
 from schemas.requests.prediction import PredictionRequest, PredictionFilter
 from schemas.responses.prediction import  PredictionResponse
 
+
+# model will create the prediction
 def create_prediction(db: Session, prediction_request: PredictionRequest, user: User):
     prediction = Prediction(**prediction_request.model_dump())
     prediction.created_by = user.id
@@ -17,6 +19,8 @@ def create_prediction(db: Session, prediction_request: PredictionRequest, user: 
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Prediction created successfully"})
 
+
+# get the predictions by user 
 def get_prediction(db: Session, prediction_filter : PredictionFilter):
     query = db.query(Prediction).filter(Prediction.is_deleted == False)
     if prediction_filter:
@@ -34,5 +38,7 @@ def get_prediction(db: Session, prediction_filter : PredictionFilter):
     
     items = query.all()
     return [PredictionResponse.model_validate(item) for item in items]
+
+
  
     

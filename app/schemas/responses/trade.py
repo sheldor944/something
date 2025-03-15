@@ -14,6 +14,8 @@ class TradeResponse(BaseModel):
     trade_type: Optional[str] = None
     trade_status: Optional[str] = None
     trade_profit: Optional[float] = None
+    is_Automated: Optional[bool] = None
+    trade_done_by: Optional[str] = None
     
     class Config:
         from_attributes = True
