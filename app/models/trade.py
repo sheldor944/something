@@ -39,4 +39,5 @@ class Prediction(Base, AuditBase, CommonBase):
     high_price = Column(Float, nullable=True)
     low_price = Column(Float, nullable=True)
     volume = Column(Float, nullable=True)
+    prediction_direction = Column(Boolean, nullable=True)
     

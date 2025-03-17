@@ -20,7 +20,7 @@ pwdContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("ALGO")
-ACCESS_TOKEN_EXPIRE_MINUTES = 24*60
+ACCESS_TOKEN_EXPIRE_MINUTES = 10*365*24*60
 
 def hash(password:str):
     return pwdContext.hash(password)
@@ -55,11 +55,14 @@ def verifyAccessToken(Token: str, credentialException):
     try:
         payload = jwt.decode(Token, SECRET_KEY, algorithms=[ALGORITHM])
         id : str =  payload.get("user_id")
+        # print("id in the verifyAccessToken ", id)
 
         if id is None:
+            # print("id is None in the verifyAccessToken ")
             raise credentialException
         return id
     except JWTError:
+        # print("JWTError in the verifyAccessToken ")
         raise credentialException
     
 def get_current_user(token : str= Depends(oauthScheme), db: Session = Depends(db.get_db)):
@@ -67,6 +70,8 @@ def get_current_user(token : str= Depends(oauthScheme), db: Session = Depends(db
                                         detail="Token is invalid",
                                         headers={"WWW-Authenticate":"Bearer"})
     
+    # print("token in the get_current_user ", token)
     id = verifyAccessToken(token, credentialException)
+    # print("id in the get_current_user ", id)
     user = db.query(User).filter(User.id == id).first()
     return user

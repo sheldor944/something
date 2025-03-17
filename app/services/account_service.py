@@ -7,8 +7,9 @@ from models.user import User
 from models.trade import Trade
 from schemas.requests.accounts import AccountRequest, AccountUpdateRequest
 from schemas.responses.account import  AccountResponse
-from models.account import Account, AutomatedAccount
+from models.account import Account, AutomatedAccount, AutomatedHandler
 from models.account import Transaction
+from automation_handler.automated_handler_thread import AutomatedHandlerThread
 
 
 def create_account(db: Session, user: User, account_request: AccountRequest):
@@ -125,3 +126,34 @@ def update_automated_account(db: Session, user: User, automated_account_request)
             account.balance = account.balance + automated_account_request.amount
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Automated Account updated successfully"})
+
+def create_automated_handler(db: Session, user: User, automated_handler_request):
+    print("int the handler mode ")
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+    if not automated_account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+    print(" found the account and automated account ")
+    automated_handler = AutomatedHandler(**automated_handler_request.model_dump())
+    automated_handler.automated_account_id = automated_account.id
+    automated_handler.created_by = user.id
+    automated_handler.status = "ACTIVE"
+    # Now start a thread for running automatically for trading, take the userId and automated_account_id, account_id
+
+
+    db.add(automated_handler)
+    db.commit()
+
+    # Start the thread
+    thread = AutomatedHandlerThread(
+        db_session=db,
+        automated_handler_id=automated_handler.id,
+        user_id=user.id,
+        account_id=account.id
+    )
+    thread.start()
+
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Automated Handler created successfully"})

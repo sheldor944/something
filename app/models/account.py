@@ -37,5 +37,17 @@ class AutomatedAccount(Base, AuditBase, CommonBase):
     account_id = Column(ForeignKey("accounts.id"), nullable=False)
     account = relationship("Account", back_populates="automated_account", foreign_keys=[account_id])
     balance = Column(Float, nullable=False)
+    automated_handler = relationship("AutomatedHandler", back_populates="automated_account")
 
-    
+class AutomatedHandler(Base, AuditBase, CommonBase):
+    __tablename__ = "automated_handlers"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    automated_account_id = Column(ForeignKey("automated_accounts.id"), nullable=False)
+    automated_account = relationship("AutomatedAccount", back_populates="automated_handler", foreign_keys=[automated_account_id])
+    symbol = Column(String, nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    profit_lower_bound = Column(Float, nullable=False)
+    profit_upper_bound = Column(Float, nullable=False)
+    profit = Column(Float, nullable=True)
+    status = Column(String, nullable=True)    

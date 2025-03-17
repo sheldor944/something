@@ -42,3 +42,12 @@ class AutomatedAccountUpdateRequest(BaseModel):
     modificationTypeAutomated: Optional[bool] = None # True for addition and False for subtraction
     class Config:
         from_attributes = True
+
+class AutomatedHandlerRequest(BaseModel):
+    symbol: Optional[str] = None
+    end_time: Optional[datetime] = None
+    start_time: Optional[datetime] = None
+    profit_lower_bound: Optional[float] = None
+    profit_upper_bound: Optional[float] = None
+    class Config:
+        from_attributes = True

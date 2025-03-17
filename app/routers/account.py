@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile, Query, Depends
-from schemas.requests.accounts import  AccountRequest, TransactionRequest, AccountUpdateRequest, AutomatedAccountRequest   
+from schemas.requests.accounts import  AccountRequest, TransactionRequest, AccountUpdateRequest, AutomatedAccountRequest, AutomatedHandlerRequest
 from services import account_service
 from dependency import get_db_session, get_current_user
 
@@ -37,3 +37,8 @@ def create_automated_account(db: get_db_session, user: get_current_user,  automa
 @router.put("/update_automated_account")
 def update_automated_account(db: get_db_session, user: get_current_user, automated_account_request: AutomatedAccountRequest):
     return account_service.update_automated_account(db, user, automated_account_request)
+
+@router.post("/create_automated_handler")
+def create_automated_handler(db: get_db_session, user: get_current_user, automated_handler_request: AutomatedHandlerRequest):
+    print("automated_handler_request in the router ", automated_handler_request)
+    return account_service.create_automated_handler(db, user, automated_handler_request)
