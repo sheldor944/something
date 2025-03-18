@@ -12,7 +12,7 @@ class PredictionRequest(BaseModel):
     low_price: Optional[float] = None
     volume: Optional[float] = None
     date: Optional[datetime] = None
-    prediction_dirrection: Optional[bool] = None
+    prediction_direction: Optional[bool] = None
     class Config:
         from_attributes = True
 

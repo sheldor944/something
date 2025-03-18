@@ -90,11 +90,106 @@ class AutomatedHandlerThread(threading.Thread):
             
             predictions = (self.db_session.query(Prediction).filter(Prediction.symbol == symbol, Prediction.is_deleted == False).order_by(Prediction.date.desc()).all())
             prediction = predictions[0] if predictions else None
-            self._trade( account, automated_account, stock )
+            trade = (self.db_session.query(Trade).filter(Trade.stock_id == stock.id, Trade.user_id == self.user_id, Trade.is_Automated == True, Trade.trade_status == 'OPEN').first())
+            # self._trade( account, automated_account, stock )
+            if trade:
+                print("there is a trade so closing it in handler_closing  ")
+                self._handle_closing_trade(account, automated_account, trade, stock)
+            else :
+                self._trade( account, automated_account, stock )
             
             self.stop()
         except Exception as e:
             self.logger.error(f"Trading strategy execution error: {e}")
+
+    def _handle_closing_trade(self, account, automated_account, trade, stock):
+        try:
+
+            # while(True): 
+                # Close the trade
+                # Get the current price
+                current_price_csv = self.get_current_price(symbol = stock.symbol, exchange = 'FOREXCOM', interval = 15, n_bars=10)
+                if not isinstance(current_price_csv, pd.DataFrame):
+                    current_price_csv = pd.DataFrame(current_price_csv)
+                current_price_csv_reset = current_price_csv.reset_index()
+                current_price = current_price_csv_reset['close'].iloc[-1]
+                current_datetime = current_price_csv_reset['datetime'].iloc[-1]
+                predictions = (self.db_session.query(Prediction).filter(Prediction.symbol == stock.symbol, Prediction.is_deleted == False).order_by(Prediction.date.desc()).all())
+                prediction = predictions[0] if predictions else None
+                print("before if prediction not ")
+                if not prediction:
+                    # break
+                    pass
+                print(prediction.date)
+                print(current_datetime)
+                if prediction.date < current_datetime:
+                    # continue
+                    print("need new prediction")
+            
+                prediction_price = float(prediction.closing_price)
+                print("prediction_price ", prediction_price)
+                print("current_price ", current_price)
+                print("trade.trade_start_price ", trade.trade_start_price)
+                if prediction_price < current_price and trade.trade_start_price < current_price :
+                    print("prediction_price < current_price and trade.trade_start_price > current_price ")
+                    # Close the trade
+                    trade.trade_end_price = current_price
+                    trade.trade_end_date = current_datetime
+                    trade.trade_status = 'CLOSED'
+                    profit = (trade.trade_end_price - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
+                    selling_price = trade.trade_end_price * trade.quantity
+                    trade.trade_profit = profit
+                    trade.updated_by = self.user_id
+                    profit = profit + selling_price
+                    automated_account.balance = automated_account.balance + profit
+                    account.automated_balance = account.automated_balance + profit
+                    transaction = Transaction(
+                        account_id = account.id,
+                        amount = profit,
+                        symbol = stock.symbol,
+                        transaction_type = 'CREDIT',
+                        transaction_date = current_datetime,
+                        transaction_status = 'DONE',    
+                        transaction_done_by = 'AUTOMATED',
+                        created_by = self.user_id
+                    )
+                    self.db_session.add(transaction)
+                    self.db_session.commit()
+
+
+                    pass
+                elif prediction_price > current_price and trade.trade_start_price < current_price and prediction.prediction_direction == False:
+                    # Close the trade
+                    print("prediction_price > current_price and trade.trade_start_price < current_price and prediction.prediction_direction == False ")
+                    print("second if ")
+                    trade.trade_end_price = current_price
+                    trade.trade_end_date = current_datetime
+                    trade.trade_status = 'CLOSED'
+                    profit = (trade.trade_end_price - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
+                    selling_price = trade.trade_end_price * trade.quantity
+                    trade.trade_profit = profit
+                    trade.updated_by = self.user_id
+                    profit = profit + selling_price
+                    automated_account.balance = automated_account.balance + profit
+                    account.automated_balance = account.automated_balance + profit
+                    transaction = Transaction(
+                        account_id = account.id,
+                        amount = profit,
+                        symbol = stock.symbol,
+                        transaction_type = 'CREDIT',
+                        transaction_date = current_datetime,
+                        transaction_status = 'DONE',    
+                        transaction_done_by = 'AUTOMATED',
+                        created_by = self.user_id
+                    )
+                    self.db_session.add(transaction)
+                    self.db_session.commit()
+                   
+                    pass
+                        
+            
+        except Exception as e:
+            self.logger.error(f"Trade closing error: {e}")
 
     def _trade(self, account, automated_account, stock):
         try:
