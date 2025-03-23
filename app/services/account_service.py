@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from models.user import User
 from models.trade import Trade
-from schemas.requests.accounts import AccountRequest, AccountUpdateRequest
+from schemas.requests.accounts import AccountRequest, AccountUpdateRequest, AutomatedAccountUpdateRequest
 from schemas.responses.account import  AccountResponse
 from models.account import Account, AutomatedAccount, AutomatedHandler
 from models.account import Transaction
@@ -104,28 +104,79 @@ def create_automated_account(db: Session, user: User,  automated_account_request
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Automated Account created successfully"})
 
-def update_automated_account(db: Session, user: User, automated_account_request):
-    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
-    if not account:
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
-    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
-    if not automated_account:
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
-    if automated_account_request.amount is not None:
+# def update_automated_account(db: Session, user: User, automated_account_request : AutomatedAccountUpdateRequest):
+#     account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+#     if not account:
+#         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+#     automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+#     if not automated_account:
+#         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+#     if automated_account_request.amount is not None:
        
-        print("automated_account.balance before update ", automated_account.balance)
-        if automated_account_request.modificationType == True:
-            if account.balance < automated_account_request.amount:
-                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the account"})
-            automated_account.balance = automated_account.balance + automated_account_request.amount
-            account.balance = account.balance - automated_account_request.amount
-        else:
-            if automated_account.balance < automated_account_request.amount:
-                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the automated account"})
-            automated_account.balance = automated_account.balance - automated_account_request.amount
-            account.balance = account.balance + automated_account_request.amount
+#         print("automated_account.balance before update ", automated_account.balance)
+#         if automated_account_request.modificationTypeAutomated == True:
+#             if account.balance < automated_account_request.amount:
+#                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the account"})
+#             print("here")
+#             automated_account.balance = automated_account.balance + automated_account_request.amount
+#             account.balance = account.balance - automated_account_request.amount
+#             print("automated_account.balance after update ", automated_account.balance)
+#             print("account.balance after update ", account.balance)
+#             db.commit()
+#         # else:
+#             if automated_account.balance < automated_account_request.amount:
+#                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the automated account"})
+#             automated_account.balance = automated_account.balance - automated_account_request.amount
+#             account.balance = account.balance + automated_account_request.amount
+#             db.commit()
+#     db.flush()
+#     db.commit()
+#     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Automated Account updated successfully"})
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Automated Account updated successfully"})
+from sqlalchemy.exc import SQLAlchemyError
+
+def update_automated_account(db: Session, user: User, automated_account_request: AutomatedAccountUpdateRequest):
+    try:
+        account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+        if not account:
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+
+        automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+        if not automated_account:
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+
+        if automated_account_request.amount is not None:
+            print("automated_account.balance before update ", automated_account.balance)
+            if automated_account_request.modificationTypeAutomated:
+                if account.balance < automated_account_request.amount:
+                    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the account"})
+                print("here")
+                automated_account.balance += automated_account_request.amount
+                account.balance -= automated_account_request.amount
+                account.automated_balance = automated_account.balance
+
+                db.flush()  # Ensure changes are sent to the database
+                db.commit()  # Commit the transaction
+
+            else:
+                if automated_account.balance < automated_account_request.amount:
+                    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance in the automated account"})
+                automated_account.balance -= automated_account_request.amount
+                account.balance += automated_account_request.amount
+                account.automated_balance = automated_account.balance
+
+            print("automated_account.balance after update ", automated_account.balance)
+            print("account.balance after update ", account.balance)
+
+            db.flush()  # Ensure changes are sent to the database
+            db.commit()  # Commit the transaction
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Automated Account updated successfully"})
+
+    except SQLAlchemyError as e:
+        db.rollback()  # Rollback in case of error
+        print(f"Database error: {e}")
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": "Database error occurred"})
 
 def create_automated_handler(db: Session, user: User, automated_handler_request):
     print("int the handler mode ")

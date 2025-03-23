@@ -39,7 +39,7 @@ class AutomatedAccountRequest(BaseModel):
 
 class AutomatedAccountUpdateRequest(BaseModel):
     amount: float = None
-    modificationTypeAutomated: Optional[bool] = None # True for addition and False for subtraction
+    modificationTypeAutomated: bool = None # True for addition and False for subtraction
     class Config:
         from_attributes = True
 

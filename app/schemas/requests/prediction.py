@@ -27,3 +27,5 @@ class PredictionFilter(BaseModel):
     last_updated_at: Optional[datetime] = None
     class Config:
         from_attributes = True
+
+
