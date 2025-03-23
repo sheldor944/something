@@ -105,6 +105,7 @@ class AutomatedHandlerThread(threading.Thread):
                     print("breaking the loop ")
                     break
                 print("start of the loop ")
+                self.db_session.commit()
                 # getting only one for now 
                 trade = (self.db_session.query(Trade).filter(Trade.stock_id == stock_id, Trade.user_id == self.user_id, Trade.is_Automated == True, Trade.trade_status == 'OPEN').first())
                 if trade:
@@ -183,7 +184,7 @@ class AutomatedHandlerThread(threading.Thread):
                     #place the trade
                     if(next_prediction.prediction_direction == True):
                         if(next_prediction.closing_price > current_miniute['close']):
-
+                            # budget = 20000
                             budget = automated_account.balance 
                             automated_account.balance -= budget
                             # automated_account.save()
