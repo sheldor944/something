@@ -20,6 +20,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
+SPREAD = 0.3
+
 # Prevent log propagation
 logging.getLogger().propagate = False
 
@@ -113,13 +115,14 @@ class AutomatedHandlerThread(threading.Thread):
                     # self._handle_closing_trade(account, automated_account, trade, stock)
                     # write a function for closing trade
                     # Close the trade
-                    if( next_prediction.closing_price < current_miniute['close'] and trade.trade_start_price < current_miniute['close']):
+                    if( next_prediction.closing_price < current_miniute['close'] - SPREAD and trade.trade_start_price < (current_miniute['close'] - SPREAD)):
                         print(" closing the trade  in the first condition ")
-                        trade.trade_end_price = current_miniute['close']
+                        trade.trade_end_price = current_miniute['close'] - SPREAD
                         trade.trade_end_date = current_miniute['datetime']
                         trade.trade_status = 'CLOSED'
-                        profit = (trade.trade_end_price - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
-                        selling_price = trade.trade_end_price * trade.quantity
+                        profit = ((trade.trade_end_price - SPREAD) - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
+                        
+                        selling_price = (trade.trade_end_price - SPREAD)* trade.quantity
                         trade.trade_profit = profit
                         trade.updated_by = self.user_id
                         # profit = profit + selling_price
@@ -139,13 +142,13 @@ class AutomatedHandlerThread(threading.Thread):
                         self.db_session.commit()
                         print("closed a trade")
                         # break 
-                    elif next_prediction.closing_price > current_miniute['close'] and trade.trade_start_price < current_miniute['close'] and next_prediction.prediction_direction == False:
+                    elif next_prediction.closing_price > current_miniute['close'] - SPREAD and trade.trade_start_price < (current_miniute['close'] - SPREAD) and next_prediction.prediction_direction == False:
                         print("closing the trade in the second condition ")
-                        trade.trade_end_price = current_miniute['close']
+                        trade.trade_end_price = current_miniute['close'] - SPREAD
                         trade.trade_end_date = current_miniute['datetime']
                         trade.trade_status = 'CLOSED'
-                        profit = (trade.trade_end_price - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
-                        selling_price = trade.trade_end_price * trade.quantity
+                        profit = ((trade.trade_end_price - SPREAD) - trade.trade_start_price) * trade.quantity * (trade.trade_type == "LONG" and 1 or -1)
+                        selling_price = (trade.trade_end_price - SPREAD)* trade.quantity
                         trade.trade_profit = profit
                         trade.updated_by = self.user_id
                         # profit = profit + selling_price
@@ -189,7 +192,7 @@ class AutomatedHandlerThread(threading.Thread):
                             automated_account.balance -= budget
                             # automated_account.save()
                             account.automated_balance -= budget
-                            current_price_float = float(current_miniute['close'])
+                            current_price_float = float(current_miniute['close']) + SPREAD
                             current_datetime = current_miniute['datetime']
                             # account.save()
                             trade = Trade(

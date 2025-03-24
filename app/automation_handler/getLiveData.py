@@ -23,9 +23,9 @@ def getLiveData(symbol: str, exchange: str, interval: str, n_bars: int):
         df = pd.DataFrame(xauusd_data)
 
         # Save to CSV
-        df.to_csv('xauusd_data.csv', index=True)
+        df.to_csv('xauusd_data_24_march.csv', index=True)
 
         print("Data saved to xauusd_data.csv")
         return df
 
-# getLiveData('XAUUSD', 'FOREXCOM', '1D', 10)
+getLiveData('XAUUSD', 'FOREXCOM', '1D', 6700)
