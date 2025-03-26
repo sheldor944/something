@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from models.user import User
-from models.trade import Prediction
+from models.trade import Prediction, CurrentPrediction
 from models.stock import Stock
 from schemas.requests.prediction import PredictionRequest, PredictionFilter
 from schemas.responses.prediction import  PredictionResponse
@@ -93,3 +93,17 @@ def add_csv_predictions_to_db(db: Session, user: User, csv_file_path: str = "app
     except Exception as e:
         db.rollback()
         return {"error": f"Failed to add predictions: {str(e)}"}
+    
+
+def create_current_prediction(db: Session, prediction_request: PredictionRequest, user: User):
+    prediction = CurrentPrediction(**prediction_request.model_dump())
+    prediction.created_by = user.id
+    db.add(prediction)
+    db.commit()
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Prediction created successfully"})
+
+def get_current_prediction(db: Session):
+    query = db.query(CurrentPrediction).filter(CurrentPrediction.is_deleted == False)
+    items = query.all()
+    return [CurrentPrediction.model_validate(item) for item in items]

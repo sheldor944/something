@@ -41,3 +41,14 @@ class Prediction(Base, AuditBase, CommonBase):
     volume = Column(Float, nullable=True)
     prediction_direction = Column(Boolean, nullable=True)
     
+class CurrentPrediction(Base, AuditBase, CommonBase):
+    __tablename__ = "current_predictions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    symbol = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+    opening_price = Column(Float, nullable=True)
+    closing_price = Column(Float, nullable=True)
+    high_price = Column(Float, nullable=True)
+    low_price = Column(Float, nullable=True)
+    volume = Column(Float, nullable=True)
+    prediction_direction = Column(Boolean, nullable=True)

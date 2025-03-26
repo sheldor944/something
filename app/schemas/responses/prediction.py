@@ -16,3 +16,17 @@ class PredictionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class CurrentPredictionResponse(BaseModel):
+    id: Optional[UUID] = None
+    symbol: Optional[str] = None
+    opening_price: Optional[float] = None
+    closing_price: Optional[float] = None
+    high_price: Optional[float] = None
+    low_price: Optional[float] = None
+    volume: Optional[float] = None
+    prediction_direction: Optional[bool] = None
+    date: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
