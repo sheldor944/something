@@ -50,4 +50,5 @@ class AutomatedHandler(Base, AuditBase, CommonBase):
     profit_lower_bound = Column(Float, nullable=False)
     profit_upper_bound = Column(Float, nullable=False)
     profit = Column(Float, nullable=True)
-    status = Column(String, nullable=True)    
+    status = Column(String, nullable=True)
+    balance = Column(Float, nullable=True)

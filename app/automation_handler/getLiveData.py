@@ -28,4 +28,4 @@ def getLiveData(symbol: str, exchange: str, interval: str, n_bars: int):
         print("Data saved to xauusd_data.csv")
         return df
 
-getLiveData('XAUUSD', 'FOREXCOM', '1D', 6700)
+# getLiveData('XAUUSD', 'FOREXCOM', '1D', 6700)

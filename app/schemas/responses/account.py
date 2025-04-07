@@ -26,3 +26,17 @@ class Transaction(BaseModel):
     transaction_done_by: str
     class Config:
         from_attributes = True
+
+class AutomatedAccountHandlerResponse(BaseModel):
+    id: UUID
+    automated_account_id: UUID
+    symbol: str
+    start_time: datetime
+    end_time: datetime
+    profit_lower_bound: float
+    profit_upper_bound: float
+    profit: Optional[float]
+    status: Optional[str]
+    balance: Optional[float]   
+    class Config:
+        from_attributes = True

@@ -6,7 +6,7 @@ from sqlalchemy import asc, desc
 from models.user import User
 from models.trade import Trade
 from schemas.requests.accounts import AccountRequest, AccountUpdateRequest, AutomatedAccountUpdateRequest
-from schemas.responses.account import  AccountResponse
+from schemas.responses.account import  AccountResponse, AutomatedAccountHandlerResponse
 from models.account import Account, AutomatedAccount, AutomatedHandler
 from models.account import Transaction
 from automation_handler.automated_handler_thread import AutomatedHandlerThread
@@ -198,13 +198,24 @@ def create_automated_handler(db: Session, user: User, automated_handler_request)
     db.commit()
 
     # Start the thread
-    thread = AutomatedHandlerThread(
-        db_session=db,
-        automated_handler_id=automated_handler.id,
-        user_id=user.id,
-        account_id=account.id
-    )
-    thread.start()
+    # thread = AutomatedHandlerThread(
+    #     db_session=db,
+    #     automated_handler_id=automated_handler.id,
+    #     user_id=user.id,
+    #     account_id=account.id
+    # )
+    # thread.start()
 
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Automated Handler created successfully"})
+
+def get_all_automated_handler(db: Session):
+    
+    print("in the service layer ")
+    automated_handlers = db.query(AutomatedHandler).filter(AutomatedHandler.is_deleted == False).all()
+    # print("automated_handlers in the service layer ", automated_handlers)
+    if not automated_handlers:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Handler not found"})
+    print("automated_handlers in the service layer ", automated_handlers)
+   
+    return [AutomatedAccountHandlerResponse.model_validate(automated_handler) for automated_handler in automated_handlers]

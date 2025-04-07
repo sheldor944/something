@@ -8,8 +8,8 @@ router = APIRouter(
 )
 
 @router.post("/prediction")
-def create_prediction(db: get_db_session, prediction_request: PredictionRequest , user: get_current_user):
-    return prediction_service.create_prediction(db, prediction_request, user)
+def create_prediction(db: get_db_session, prediction_request: PredictionRequest ):
+    return prediction_service.create_prediction(db, prediction_request)
 
 @router.get("/prediction")
 def get_prediction(db: get_db_session, prediction_filter : PredictionFilter = Depends(None)):

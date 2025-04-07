@@ -42,3 +42,11 @@ def update_automated_account(db: get_db_session, user: get_current_user, automat
 def create_automated_handler(db: get_db_session, user: get_current_user, automated_handler_request: AutomatedHandlerRequest):
     print("automated_handler_request in the router ", automated_handler_request)
     return account_service.create_automated_handler(db, user, automated_handler_request)
+
+@router.get("/all_automated_handler")
+def get_all_automated_handler(db: get_db_session):
+    return account_service.get_all_automated_handler(db)
+
+@router.post("/create_transaction_for_automated_account")
+def create_transaction_for_automated_account(db: get_db_session, transaction_request: TransactionRequest):
+    return account_service.create_transaction_for_automated_account(db, transaction_request)

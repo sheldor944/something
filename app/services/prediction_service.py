@@ -6,8 +6,8 @@ from sqlalchemy import asc, desc
 from models.user import User
 from models.trade import Prediction, CurrentPrediction
 from models.stock import Stock
-from schemas.requests.prediction import PredictionRequest, PredictionFilter
-from schemas.responses.prediction import  PredictionResponse
+from schemas.requests.prediction import PredictionRequest, PredictionFilter, CurrentPredictionRequest
+from schemas.responses.prediction import  PredictionResponse, CurrentPredictionResponse
 import pandas as pd
 from datetime import datetime
 from fastapi import Depends
@@ -17,9 +17,30 @@ import os
 
 
 # model will create the prediction
-def create_prediction(db: Session, prediction_request: PredictionRequest, user: User):
+def create_prediction(db: Session, prediction_request: PredictionRequest):
+    print("here")
+    user = db.query(User).filter(User.is_deleted == False).first()
+    print("got a user")
     prediction = Prediction(**prediction_request.model_dump())
     prediction.created_by = user.id
+    latest_current_prediction = db.query(CurrentPrediction).filter(CurrentPrediction.is_deleted == False).order_by(desc(CurrentPrediction.date)).first()
+    if latest_current_prediction:
+        latest_current_prediction.is_deleted = True
+        
+    currentPredictionRequest = CurrentPredictionRequest(
+        symbol=prediction.symbol,
+        opening_price=prediction.opening_price,
+        closing_price=prediction.closing_price,
+        high_price=prediction.high_price,
+        low_price=prediction.low_price,
+        volume=prediction.volume,
+        date=prediction.date,
+        prediction_direction=prediction.prediction_direction
+    )
+    currentPrediction = CurrentPrediction(**currentPredictionRequest.model_dump())
+    currentPrediction.created_by = user.id
+    db.add(currentPrediction)
+
     db.add(prediction)
     db.commit()
 
@@ -106,4 +127,12 @@ def create_current_prediction(db: Session, prediction_request: PredictionRequest
 def get_current_prediction(db: Session):
     query = db.query(CurrentPrediction).filter(CurrentPrediction.is_deleted == False)
     items = query.all()
-    return [CurrentPrediction.model_validate(item) for item in items]
+    return [CurrentPredictionResponse.model_validate(item) for item in items]
+
+def delete_current_prediction(db: Session, prediction_id: str):
+    prediction = db.query(CurrentPrediction).filter(CurrentPrediction.id == prediction_id).first()
+    if prediction:
+        prediction.is_deleted = True
+        db.commit()
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Prediction deleted successfully"})
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Prediction not found"})

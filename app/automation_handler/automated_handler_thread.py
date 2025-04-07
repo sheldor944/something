@@ -56,8 +56,8 @@ class AutomatedHandlerThread(threading.Thread):
             
             while self.is_running:
                 try:
-                    # self._execute_trading_strategy()
-                    self.test()
+                    self._execute_trading_strategy()
+                    # self.test()
                     time.sleep(60)
                     self.stop()
                 except Exception as inner_error:

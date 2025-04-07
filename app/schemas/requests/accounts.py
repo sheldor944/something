@@ -32,6 +32,19 @@ class TransactionRequest(BaseModel):
     class Config:
         from_attributes = True
 
+class TransactionForAutomatedAccountRequest(BaseModel):
+    account_id: UUID = None
+    amount: float = None  # Changed from transaction_amount to amount
+    symbol: Optional[str] = None
+    transaction_type: Optional[str] = None
+    transaction_date: Optional[datetime] = None
+    transaction_status: Optional[str] = None
+    transaction_done_by: Optional[str] = None
+    automated_account_id: UUID = None
+
+    class Config:
+        from_attributes = True
+
 class AutomatedAccountRequest(BaseModel):
     balance: float = None
     class Config:
