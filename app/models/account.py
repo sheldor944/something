@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from db import Base
@@ -7,8 +7,10 @@ from models.base import AuditBase, CommonBase
 
 class Account(Base, AuditBase, CommonBase):
     __tablename__ = "accounts"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    __table_args__ = (UniqueConstraint("user_id", name="uq_user_id"),)
 
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    # user id should be unique , i. e. one user can have only one account
     user_id = Column(ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="account", foreign_keys=[user_id])
 
@@ -44,6 +46,8 @@ class AutomatedHandler(Base, AuditBase, CommonBase):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     automated_account_id = Column(ForeignKey("automated_accounts.id"), nullable=False)
     automated_account = relationship("AutomatedAccount", back_populates="automated_handler", foreign_keys=[automated_account_id])
+    user_id = Column(ForeignKey("users.id"), nullable=False)
+    user = relationship("User", back_populates="automated_handler", foreign_keys=[user_id])
     symbol = Column(String, nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)

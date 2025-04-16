@@ -1,11 +1,12 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 from fastapi import UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from models.user import User
+from models.user import AutomatedHandler
 from models.trade import Trade
-from schemas.requests.trade import TradeCreateRequest, TradeCloseRequest, TradeFilter
+from schemas.requests.trade import TradeCreateRequest, TradeCloseRequest, TradeFilter, TradeCreateRequestAutomated, TradeCloseRequestAutomated
 from schemas.responses.trade import  TradeResponse
 from models.account import Account, Transaction, AutomatedAccount
 from utils.query_filter_builder import QueryFilterBuilder
@@ -20,12 +21,12 @@ def create_trade(db: Session, user: User, create_trade: TradeCreateRequest):
     if not account:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
     automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
-    if account.balance < create_trade.trade_start_price * create_trade.quantity and create_trade.is_Automated == False:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance"})
-    if create_trade.is_Automated == True and account.automated_balance < create_trade.trade_start_price * create_trade.quantity:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient automated balance"})
-    if create_trade.is_Automated == False:
-        account.balance = account.balance - create_trade.trade_start_price * create_trade.quantity
+    # if account.balance < create_trade.trade_start_price * create_trade.quantity and create_trade.is_Automated == False:
+    #     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance"})
+    # if create_trade.is_Automated == True and account.automated_balance < create_trade.trade_start_price * create_trade.quantity:
+    #     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient automated balance"})
+    # if create_trade.is_Automated == False:
+    #     account.balance = account.balance - create_trade.trade_start_price * create_trade.quantity
     if create_trade.is_Automated == True:
         if not automated_account:
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
@@ -54,6 +55,100 @@ def create_trade(db: Session, user: User, create_trade: TradeCreateRequest):
     db.commit()
 
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Trade created successfully"})
+
+
+def create_trade_automatic(db: Session, create_trade: TradeCreateRequestAutomated):
+
+
+
+    account = db.query(Account).filter(Account.user_id == create_trade.user_id, Account.is_deleted == False).first()
+    print("GOT THE ACCOUNT +++++============++++++", account)
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+    if not automated_account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+    automated_handler = db.query(AutomatedHandler).filter(AutomatedHandler.automated_account_id == automated_account.id, AutomatedHandler.status == "ACTIVE", AutomatedHandler.is_deleted == False).first()
+    if not automated_handler:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Handler not found"})
+    print(f"create trade quantity {create_trade.quantity}")
+    create_trade.quantity = create_trade.quantity * 100
+    # if account.balance < create_trade.trade_start_price * create_trade.quantity and create_trade.is_Automated == False:
+    #     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient balance"})
+    # if create_trade.is_Automated == True and account.automated_balance < create_trade.trade_start_price * create_trade.quantity:
+    #     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Insufficient automated balance"})
+    # if create_trade.is_Automated == False:
+    #     account.balance = account.balance - create_trade.trade_start_price * create_trade.quantity
+    if create_trade.is_Automated == True:
+        if not automated_account:
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+        automated_account.balance = automated_account.balance - (create_trade.trade_start_price * create_trade.quantity)
+        account.automated_balance = account.automated_balance - create_trade.trade_start_price * create_trade.quantity
+        automated_handler.balance = automated_handler.balance - (create_trade.trade_start_price * create_trade.quantity)
+    stock = db.query(Stock).filter(Stock.id == create_trade.stock_id, Stock.is_deleted == False).first()
+    print("stock is ", stock)
+    transaction_request = TransactionRequest(
+        # account_id = account.id,
+        transaction_type = "DEBIT",
+        symbol = stock.symbol,
+        amount=create_trade.trade_start_price * create_trade.quantity,
+        transaction_status = "COMPLETED",
+        transaction_date = datetime.now(),
+        transaction_done_by = create_trade.is_Automated and "AUTOMATED" or "MANUAL"
+    )
+    user_id = account.user_id
+    transaction = Transaction(**transaction_request.model_dump())
+    transaction.account_id = account.id
+    transaction.created_by = user_id
+    db.add(transaction)
+    trade = Trade(**create_trade.model_dump())
+    trade.trade_start_date = datetime.now() 
+    trade.user_id = user_id
+    trade.created_by = user_id
+    trade.trade_status = "OPEN"
+    db.add(trade)
+    db.commit()
+    
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Trade created successfully"})
+
+
+def close_trade_automatic(db: Session, close_trade: TradeCloseRequestAutomated):
+    trade = db.query(Trade).filter(Trade.trade_ticket == close_trade.trade_ticket, Trade.user_id == close_trade.user_id, Trade.trade_status == "OPEN", Trade.is_deleted == False).first()
+    account = db.query(Account).filter(Account.user_id == close_trade.user_id, Account.is_deleted == False).first()
+    if not account: 
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+    if not automated_account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+    if not trade:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Trade not found"})
+    automated_handler = db.query(AutomatedHandler).filter(AutomatedHandler.automated_account_id == automated_account.id, AutomatedHandler.status == "ACTIVE", AutomatedHandler.is_deleted == False).first()
+    if not automated_handler:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Handler not found"})
+    trade.trade_end_price = close_trade.trade_end_price
+    trade.trade_end_date = datetime.now()
+    trade.trade_status = "CLOSED"
+    profit = close_trade.profit
+    trade.trade_profit = profit
+    trade.updated_by = close_trade.user_id
+    stock = trade.stock
+    transaction_request = TransactionRequest(
+        transaction_type = "CREDIT",
+        symbol = stock.symbol,
+        amount = profit,
+        transaction_status = "COMPLETED",
+        transaction_date = datetime.now(),
+        transaction_done_by = trade.is_Automated and "AUTOMATED" or "MANUAL"
+    )
+    automated_account.balance = automated_account.balance + (trade.trade_end_price*trade.quantity )
+    account.automated_balance = account.automated_balance + (trade.trade_end_price*trade.quantity )
+    automated_handler.balance = automated_handler.balance + (trade.trade_end_price*trade.quantity )
+    transaction = Transaction(**transaction_request.model_dump())
+    transaction.account_id = account.id
+    transaction.created_by = close_trade.user_id
+    db.add(transaction)
+    db.commit()
 
 def close_trade(db: Session, user: User, close_trade: TradeCloseRequest):
     account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()

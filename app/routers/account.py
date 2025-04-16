@@ -50,3 +50,12 @@ def get_all_automated_handler(db: get_db_session):
 @router.post("/create_transaction_for_automated_account")
 def create_transaction_for_automated_account(db: get_db_session, transaction_request: TransactionRequest):
     return account_service.create_transaction_for_automated_account(db, transaction_request)
+
+@router.get("/get_automated_account_handler")
+def get_automated_account(db: get_db_session, user: get_current_user):
+    return account_service.get_automated_account_handler(db, user)
+
+@router.get("/get_automated_account")
+def get_automated_account(db: get_db_session, user: get_current_user):
+    return account_service.get_automated_account(db, user)
+

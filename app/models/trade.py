@@ -26,6 +26,8 @@ class Trade(Base, AuditBase, CommonBase):
     trade_status = Column(String, nullable=False)
     is_Automated = Column(Boolean, nullable=False)
     trade_profit = Column(Float, nullable=True)
+    trade_ticket = Column(String, nullable=True)
+
 
 class Prediction(Base, AuditBase, CommonBase):
     __tablename__ = "predictions"

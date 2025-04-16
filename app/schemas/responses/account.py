@@ -30,6 +30,7 @@ class Transaction(BaseModel):
 class AutomatedAccountHandlerResponse(BaseModel):
     id: UUID
     automated_account_id: UUID
+    user_id: UUID
     symbol: str
     start_time: datetime
     end_time: datetime
@@ -38,5 +39,13 @@ class AutomatedAccountHandlerResponse(BaseModel):
     profit: Optional[float]
     status: Optional[str]
     balance: Optional[float]   
+    class Config:
+        from_attributes = True
+
+# make a response for automated account
+class AutomatedAccountResponse(BaseModel):
+    id: UUID
+    balance: float
+    # automated_handler: Optional[AutomatedAccountHandlerResponse]
     class Config:
         from_attributes = True

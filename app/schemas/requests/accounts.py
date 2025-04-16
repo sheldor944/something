@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 class AccountRequest(BaseModel):
     # user_id: Optional[UUID] = None
     balance: Optional[float] = None
-    automated_balance: Optional[float] = None
+    # automated_balance: Optional[float] = None
     currency: Optional[str] = None
     class Config:
         from_attributes = True
@@ -57,6 +57,7 @@ class AutomatedAccountUpdateRequest(BaseModel):
         from_attributes = True
 
 class AutomatedHandlerRequest(BaseModel):
+    
     symbol: Optional[str] = None
     end_time: Optional[datetime] = None
     start_time: Optional[datetime] = None
@@ -64,3 +65,4 @@ class AutomatedHandlerRequest(BaseModel):
     profit_upper_bound: Optional[float] = None
     class Config:
         from_attributes = True
+

@@ -5,15 +5,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from models.user import User
 from models.trade import Trade
-from schemas.requests.accounts import AccountRequest, AccountUpdateRequest, AutomatedAccountUpdateRequest
-from schemas.responses.account import  AccountResponse, AutomatedAccountHandlerResponse
+from schemas.requests.accounts import AccountRequest, AccountUpdateRequest, AutomatedAccountUpdateRequest, AutomatedHandlerRequest
+from schemas.responses.account import  AccountResponse, AutomatedAccountHandlerResponse, AutomatedAccountResponse
 from models.account import Account, AutomatedAccount, AutomatedHandler
 from models.account import Transaction
 from automation_handler.automated_handler_thread import AutomatedHandlerThread
 
 
 def create_account(db: Session, user: User, account_request: AccountRequest):
+    print(f"account_req {account_request} ")
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if account:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Account already exists"})
     account = Account(**account_request.model_dump())
+    account.automated_balance = 0
     account.user_id = user.id
     account.created_by = user.id
     db.add(account)
@@ -52,9 +57,8 @@ def update_account(db: Session, user: User, account_update_request: AccountUpdat
     accountSchema = AccountResponse.model_validate(account)
     return accountSchema
 def get_account(db: Session, user: User):
-    print("account_id in the service layer ", user.id)
-    account_id = user.id
-    account = db.query(Account).filter(Account.id == account_id, Account.is_deleted == False).first()
+    print("===================================")
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
     if not account:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
     print("account in the service layer ", account)
@@ -178,7 +182,7 @@ def update_automated_account(db: Session, user: User, automated_account_request:
         print(f"Database error: {e}")
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": "Database error occurred"})
 
-def create_automated_handler(db: Session, user: User, automated_handler_request):
+def create_automated_handler(db: Session, user: User, automated_handler_request: AutomatedHandlerRequest):
     print("int the handler mode ")
     account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
     if not account:
@@ -189,8 +193,10 @@ def create_automated_handler(db: Session, user: User, automated_handler_request)
     print(" found the account and automated account ")
     automated_handler = AutomatedHandler(**automated_handler_request.model_dump())
     automated_handler.automated_account_id = automated_account.id
+    automated_handler.user = user
     automated_handler.created_by = user.id
     automated_handler.status = "ACTIVE"
+    automated_handler.balance = automated_account.balance
     # Now start a thread for running automatically for trading, take the userId and automated_account_id, account_id
 
 
@@ -212,10 +218,50 @@ def create_automated_handler(db: Session, user: User, automated_handler_request)
 def get_all_automated_handler(db: Session):
     
     print("in the service layer ")
-    automated_handlers = db.query(AutomatedHandler).filter(AutomatedHandler.is_deleted == False).all()
+    automated_handlers = db.query(AutomatedHandler).filter(AutomatedHandler.status == "ACTIVE",AutomatedHandler.is_deleted == False).all()
     # print("automated_handlers in the service layer ", automated_handlers)
     if not automated_handlers:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Handler not found"})
     print("automated_handlers in the service layer ", automated_handlers)
+
+    for automated_handler in automated_handlers:
+        print(f"handler end time {automated_handler.end_time}")
+        print(f"current time {datetime.now()}")
+        if(automated_handler.end_time < datetime.now()):
+            automated_handler.status = "INACTIVE"
+            # db.add(automated_handler)
+            db.commit()
    
     return [AutomatedAccountHandlerResponse.model_validate(automated_handler) for automated_handler in automated_handlers]
+
+def get_automated_account_handler(db: Session, user: User):
+    print("in the get automated account service layer ")
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+    if not automated_account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+    print("automated_account in the service layer ", automated_account)
+    automated_handler = db.query(AutomatedHandler).filter(AutomatedHandler.automated_account_id == automated_account.id, AutomatedHandler.is_deleted == False).first()
+    if not automated_handler:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Handler not found"})
+    print("automated_handler in the service layer ", automated_handler)
+    automated_accountSchema = AutomatedAccountHandlerResponse.model_validate(automated_handler)
+    print("automated_accountSchema in the service layer ", automated_accountSchema)
+
+    return automated_accountSchema
+
+def get_automated_account(db: Session, user: User):
+    print("in the get automated account service layer ")
+    account = db.query(Account).filter(Account.user_id == user.id, Account.is_deleted == False).first()
+    if not account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Account not found"})
+    automated_account = db.query(AutomatedAccount).filter(AutomatedAccount.account_id == account.id, AutomatedAccount.is_deleted == False).first()
+    if not automated_account:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Automated Account not found"})
+    print("automated_account in the service layer ", automated_account)
+    automated_accountSchema = AutomatedAccountResponse.model_validate(automated_account)
+    print("automated_accountSchema in the service layer ", automated_accountSchema)
+
+    return automated_accountSchema

@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from db import Base
 from models.base import CommonBase  
 from models.trade import Trade  
-from models.account import Account
+from models.account import Account, AutomatedHandler
 
 class User(Base,CommonBase):
         __tablename__ = "users"
@@ -21,6 +21,7 @@ class User(Base,CommonBase):
         profile = relationship("Profile", back_populates="user",cascade="all, delete-orphan")
         trades = relationship("Trade", back_populates="user", foreign_keys=[Trade.user_id])
         account = relationship("Account", back_populates="user", foreign_keys=[Account.user_id])
+        automated_handler = relationship("AutomatedHandler", back_populates="user", foreign_keys=[AutomatedHandler.user_id])
 
 class Profile(Base,CommonBase):
         __tablename__ = "profiles"
